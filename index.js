@@ -5,7 +5,6 @@ const path = require( 'path' );
 const archiver = require( 'archiver' );
 
 const projectPath = process.cwd();
-console.log( projectPath );
 
 const pkg = require( path.resolve( projectPath, 'package.json' ) );
 
