@@ -1,0 +1,18 @@
+{
+  "name": "zip-project",
+  "version": "1.0.0",
+  "description": "Helper to create a zip file of all files in package.json `files`",
+  "author": "Kelly Dwan (@ryelle)",
+  "license": "GPL-2.0-or-later",
+  "bin": {
+    "zip": "./index.js"
+  },
+  "main": "./index.js",
+  "devDependencies": {
+    "archiver": "^2.1.0",
+    "eslint": "^4.16.0"
+  },
+  "files": [
+    "index.js"
+  ]
+}
