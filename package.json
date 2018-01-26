@@ -8,8 +8,10 @@
     "zip": "./index.js"
   },
   "main": "./index.js",
+  "dependencies": {
+    "archiver": "^2.1.0"
+  },
   "devDependencies": {
-    "archiver": "^2.1.0",
     "eslint": "^4.16.0"
   },
   "files": [
