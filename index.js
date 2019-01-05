@@ -8,6 +8,7 @@ const archiver = require( 'archiver' );
 const argv = require( 'yargs' )
 	.usage( 'Usage: $0 [options]' )
 	.describe( 'path', 'Path to your project, defaults to current dir.' )
+	.describe( 'output', 'Path to save the zip file, defaults to current dir.' )
 	.describe( 'debug', 'Output which files are added to the zip during build.' )
 	.alias( 'debug', 'v' )
 	.default( 'path', process.cwd() )
@@ -18,6 +19,7 @@ const argv = require( 'yargs' )
 const { error, info, success, warn } = require( './log' );
 
 const projectPath = argv.path;
+const outputPath = argv.output;
 const showDebug = argv.debug;
 
 let pkg;
@@ -37,7 +39,7 @@ if ( ! files || files.length < 1 ) {
 	error( 'ERROR:', 'Please add the files you want to publish to an array called `files` in package.json.' );
 }
 
-const zipPath = path.resolve( projectPath, `./${ projectName }.zip` );
+const zipPath = path.resolve( outputPath, `./${ projectName }.zip` );
 
 // create a file to stream archive data to.
 const output = fs.createWriteStream( zipPath );
@@ -74,7 +76,7 @@ files.map( file => {
 	if ( showDebug ) {
 		info( `Adding ${ file }` );
 	}
-	archive.glob( path.resolve( projectPath, file ) );
+	archive.glob( file, { cwd: projectPath } );
 } );
 
 info( `Writing to the zip at ${ zipPath }` );
