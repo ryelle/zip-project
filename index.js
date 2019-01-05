@@ -1,51 +1,82 @@
 #!/usr/bin/env node
-
+// Node internals
 const fs = require( 'fs' );
 const path = require( 'path' );
+
+// Packages
 const archiver = require( 'archiver' );
+const argv = require( 'yargs' )
+	.usage( 'Usage: $0 [options]' )
+	.describe( 'path', 'Path to your project, defaults to current dir.' )
+	.describe( 'debug', 'Output which files are added to the zip during build.' )
+	.alias( 'debug', 'v' )
+	.default( 'path', process.cwd() )
+	.boolean( 'v' )
+	.argv;
 
-const projectPath = process.cwd();
+// Utilities
+const { error, info, success, warn } = require( './log' );
 
-const pkg = require( path.resolve( projectPath, 'package.json' ) );
+const projectPath = argv.path;
+const showDebug = argv.debug;
 
-( function() {
-	// Pull the theme name from pacakage.json, falling back to pathname if not found.
-	const projectName = pkg.name.toLowerCase() || path.basename( projectPath );
+let pkg;
+try {
+	const pkgPath = path.resolve( projectPath, 'package.json' );
+	pkg = require( pkgPath );
+} catch ( e ) {
+	error( 'ERROR:', `No package.json found in ${ projectPath }` );
+}
 
-	// Our theme files are pulled from package.json
-	const files = pkg.files;
-	if ( ! files || files.length < 1 ) {
-		console.log( 'ERROR: Please add the files you want to publish to an array called `files` in package.json.' );
-		return;
+// Pull the project name from pacakage.json, falling back to pathname if not found.
+const projectName = pkg.name && pkg.name.toLowerCase() || path.basename( projectPath );
+
+// Our project files are pulled from package.json
+const files = pkg.files;
+if ( ! files || files.length < 1 ) {
+	error( 'ERROR:', 'Please add the files you want to publish to an array called `files` in package.json.' );
+}
+
+const zipPath = path.resolve( projectPath, `./${ projectName }.zip` );
+
+// create a file to stream archive data to.
+const output = fs.createWriteStream( zipPath );
+
+// listen for all archive data to be written
+output.on( 'close', () => {
+	if ( showDebug ) {
+		info( '%s total bytes', archive.pointer() );
 	}
+	success( `Archive finished, zip available at ${ zipPath }` );
+} );
 
-	// create a file to stream archive data to.
-	const output = fs.createWriteStream( path.resolve( projectPath, `./${ projectName }.zip` ) );
-	const archive = archiver( 'zip', {
-		store: true // Sets the compression method to STORE.
-	} );
+const archive = archiver( 'zip', {
+	zlib: { level: 9 }
+} );
 
-	// listen for all archive data to be written
-	output.on( 'close', () => {
-		console.log( archive.pointer() + ' total bytes' );
-		console.log( 'archiver has been finalized and the output file descriptor has closed.' );
-	} );
-
-	// watch for any errors
-	archive.on( 'error', function( err ) {
+archive.on( 'warning', ( err ) => {
+	if ( err.code === 'ENOENT' ) {
+		warn( err );
+	} else {
 		throw err;
-	} );
+	}
+});
 
-	// send archive data to the output file
-	archive.pipe( output );
+archive.on( 'error', ( err ) => {
+	throw err;
+} );
 
-	// add each file to the zip
-	files.map( file => {
-		console.log( `Adding ${file}` );
-		archive.glob( file );
-	} );
+// send archive data to the output file
+archive.pipe( output );
 
-	console.log( `Saving the zip to ./${ projectName }.zip` );
-	// finalize the archive (ie we are done appending files but streams have to finish yet)
-	archive.finalize();
-} )();
+// add each file to the zip
+files.map( file => {
+	if ( showDebug ) {
+		info( `Adding ${ file }` );
+	}
+	archive.glob( path.resolve( projectPath, file ) );
+} );
+
+info( `Writing to the zip at ${ zipPath }` );
+// finalize the archive (ie we are done appending files but streams have to finish yet)
+archive.finalize();
