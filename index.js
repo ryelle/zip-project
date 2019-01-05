@@ -12,6 +12,7 @@ const argv = require( 'yargs' )
 	.describe( 'debug', 'Output which files are added to the zip during build.' )
 	.alias( 'debug', 'v' )
 	.default( 'path', process.cwd() )
+	.default( 'output', process.cwd() )
 	.boolean( 'v' )
 	.argv;
 
